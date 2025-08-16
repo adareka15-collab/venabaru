@@ -139,7 +139,6 @@ export const useSupabaseData = () => {
   const [rewardLedgerEntries, setRewardLedgerEntries] = useState<RewardLedgerEntry[]>([]);
   const [pockets, setPockets] = useState<FinancialPocket[]>([]);
   const [cards, setCards] = useState<Card[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
 
   const fetchAllData = async () => {
@@ -153,7 +152,7 @@ export const useSupabaseData = () => {
         packagesResult, addOnsResult, leadsResult, feedbackResult,
         contractsResult, socialPostsResult, promoCodesResult, assetsResult,
         sopsResult, teamPaymentsResult, paymentRecordsResult,
-        rewardEntriesResult, pocketsResult, cardsResult, usersResult,
+        rewardEntriesResult, pocketsResult, cardsResult,
         profilesResult
       ] = await Promise.all([
         supabase.from('clients').select('*').order('created_at', { ascending: false }),
@@ -178,7 +177,6 @@ export const useSupabaseData = () => {
         supabase.from('reward_ledger_entries').select('*').order('date', { ascending: false }),
         supabase.from('financial_pockets').select('*').order('name'),
         supabase.from('cards').select('*'),
-        supabase.from('users').select('*').order('full_name'),
         supabase.from('profiles').select('*').limit(1),
       ]);
 
@@ -188,7 +186,7 @@ export const useSupabaseData = () => {
         packagesResult, addOnsResult, leadsResult, feedbackResult,
         contractsResult, socialPostsResult, promoCodesResult, assetsResult,
         sopsResult, teamPaymentsResult, paymentRecordsResult, rewardEntriesResult,
-        pocketsResult, cardsResult, usersResult, profilesResult
+        pocketsResult, cardsResult, profilesResult
       ];
 
       const firstError = results.find(result => result.error);
@@ -264,7 +262,6 @@ export const useSupabaseData = () => {
       setRewardLedgerEntries(rewardEntriesResult.data || []);
       setPockets(pocketsResult.data || []);
       setCards(cardsResult.data || []);
-      setUsers(usersResult.data || []);
       setProfile(profilesResult.data && profilesResult.data.length > 0 ? convertDbProfile(profilesResult.data[0]) : null);
 
     } catch (err) {
@@ -302,7 +299,6 @@ export const useSupabaseData = () => {
     rewardLedgerEntries, setRewardLedgerEntries,
     pockets, setPockets,
     cards, setCards,
-    users, setUsers,
     profile, setProfile,
   };
 };

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { User } from '../types';
+import { supabase } from '../lib/supabase';
+import { User } from '../types'; // This type might need adjustment later
 
 const UserIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -23,13 +24,11 @@ const EyeOffIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 11 8 11 8a18.35 18.35 0 0 1-2.18 3.22"/><path d="M1.42 1.42A19.88 19.88 0 0 0 1 12s4 8 11 8a18.35 18.35 0 0 0 3.22-2.18"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
 );
 
-
 interface LoginProps {
-    onLoginSuccess: (user: User) => void;
-    users: User[];
+    onLoginSuccess: (user: any) => void; // Using 'any' for now, will be refined in App.tsx
 }
 
-const Login: React.FC<LoginProps> = ({ onLoginSuccess, users }) => {
+const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -42,16 +41,31 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess, users }) => {
         setIsLoading(true);
 
         try {
-            // Find user by email first
-            const user = users.find(u => u.email === email && u.password === password);
-            if (user) {
-                onLoginSuccess(user);
-            } else {
-                setError('Username atau kata sandi salah.');
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (error) {
+                // Translate common Supabase error messages
+                if (error.message === 'Invalid login credentials') {
+                    setError('Username atau kata sandi salah.');
+                } else {
+                    setError(error.message);
+                }
+                setIsLoading(false);
+                return;
             }
-        } catch (err) {
+
+            if (data.user) {
+                onLoginSuccess(data.user);
+            } else {
+                setError('Login gagal. Pengguna tidak ditemukan.');
+            }
+
+        } catch (err: any) {
             console.error('Login error:', err);
-            setError('Terjadi kesalahan saat login.');
+            setError(err.message || 'Terjadi kesalahan saat login.');
         } finally {
             setIsLoading(false);
         }

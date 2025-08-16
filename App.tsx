@@ -25,6 +25,8 @@ import FreelancerPortal from './components/FreelancerPortal';
 import SocialPlanner from './components/SocialPlanner';
 import PromoCodes from './components/PromoCodes';
 import SOPManagement from './components/SOP';
+import { supabase } from './lib/supabase';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { useSupabaseData } from './hooks/useSupabase';
 import { ViewType, Client, Project, TeamMember, Transaction, Package, AddOn, TeamProjectPayment, Profile, FinancialPocket, TeamPaymentRecord, Lead, RewardLedgerEntry, User, Card, Asset, ClientFeedback, Contract, RevisionStatus, NavigationAction, Notification, SocialMediaPost, PromoCode, SOP } from './types';
 import { MOCK_NOTIFICATIONS, HomeIcon, FolderKanbanIcon, UsersIcon, DollarSignIcon, PlusIcon } from './constants';
@@ -110,6 +112,7 @@ const App: React.FC = () => {
   const [route, setRoute] = useState(window.location.hash);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isPublicView, setIsPublicView] = useState(false); // State to track if it's a public view
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   // Use Supabase data hook
   const {
@@ -134,9 +137,53 @@ const App: React.FC = () => {
     rewardLedgerEntries, setRewardLedgerEntries,
     pockets, setPockets,
     cards, setCards,
-    users, setUsers,
     profile, setProfile, // Profile data from Supabase
   } = useSupabaseData();
+
+  const fetchUserProfile = async (user: SupabaseUser) => {
+    const { data: userProfile, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      // Log out the user if their profile doesn't exist
+      await supabase.auth.signOut();
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+    } else if (userProfile) {
+      setCurrentUser(userProfile);
+      setIsAuthenticated(true);
+    }
+  };
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await fetchUserProfile(session.user);
+      }
+      setSessionChecked(true);
+    };
+
+    checkSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchUserProfile(session.user);
+      } else {
+        setIsAuthenticated(false);
+        setCurrentUser(null);
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -213,13 +260,13 @@ const App: React.FC = () => {
     }, duration);
   };
 
-  const handleLoginSuccess = (user: User) => {
-    setIsAuthenticated(true);
-    setCurrentUser(user);
+  const handleLoginSuccess = async (user: SupabaseUser) => {
+    await fetchUserProfile(user);
     setActiveView(ViewType.DASHBOARD);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setIsAuthenticated(false);
     setCurrentUser(null);
   };
@@ -545,8 +592,6 @@ const App: React.FC = () => {
               setProfile={setProfile}
               transactions={transactions}
               projects={projects}
-              users={users}
-              setUsers={setUsers}
               currentUser={currentUser}
             />;
       case ViewType.CALENDAR:
@@ -610,9 +655,34 @@ const App: React.FC = () => {
     );
   }
 
+  // Show loading state while data is being fetched and session is being checked
+  if ((dataLoading || !sessionChecked) && !isPublicView) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-brand-bg">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-accent mx-auto mb-4"></div>
+          <p className="text-brand-text-primary">Memuat data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if data loading failed
+  if (dataError && !isPublicView) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-brand-bg p-4">
+        <div className="text-center bg-brand-surface p-8 rounded-2xl shadow-lg">
+          <h2 className="text-xl font-bold text-brand-danger mb-4">Error Memuat Data</h2>
+          <p className="text-brand-text-primary mb-4">{dataError}</p>
+          <button onClick={refetchData} className="button-primary">Coba Lagi</button>
+        </div>
+      </div>
+    );
+  }
+
   // Render the main app layout if authenticated and no loading/error
   if (!isAuthenticated) {
-    return <Login onLoginSuccess={handleLoginSuccess} users={users} />;
+    return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
   return (

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import { Profile, Transaction, Project, User, ViewType, ProjectStatusConfig, SubStatusConfig } from '../types';
 import PageHeader from './PageHeader';
 import Modal from './Modal';
@@ -238,13 +239,11 @@ interface SettingsProps {
     setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
     transactions: Transaction[];
     projects: Project[];
-    users: User[];
-    setUsers: React.Dispatch<React.SetStateAction<User[]>>;
     currentUser: User | null;
 }
 
 const emptyUserForm = { 
-    fullName: '', 
+    full_name: '',
     email: '', 
     password: '', 
     confirmPassword: '', 
@@ -252,7 +251,33 @@ const emptyUserForm = {
     permissions: [] as ViewType[],
 };
 
-const Settings: React.FC<SettingsProps> = ({ profile, setProfile, transactions, projects, users, setUsers, currentUser }) => {
+const Settings: React.FC<SettingsProps> = ({ profile, setProfile, transactions, projects, currentUser }) => {
+    const [activeTab, setActiveTab] = useState('profile');
+    const [showSuccess, setShowSuccess] = useState(false);
+
+    // State for user management
+    const [users, setUsers] = useState<User[]>([]);
+    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+    const [userModalMode, setUserModalMode] = useState<'add' | 'edit'>('add');
+    const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [userForm, setUserForm] = useState(emptyUserForm);
+    const [userFormError, setUserFormError] = useState('');
+
+    // Fetch users when the component mounts or the user tab is selected
+    useEffect(() => {
+        const fetchUsers = async () => {
+            if (activeTab === 'users' && currentUser?.role === 'Admin') {
+                const { data, error } = await supabase.from('users').select('*');
+                if (error) {
+                    console.error('Error fetching users:', error);
+                } else {
+                    setUsers(data as User[]);
+                }
+            }
+        };
+        fetchUsers();
+    }, [activeTab, currentUser?.role]);
+
     // Show loading if profile is not loaded yet
     if (!profile) {
         return (
@@ -264,8 +289,6 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile, transactions, 
             </div>
         );
     }
-    const [activeTab, setActiveTab] = useState('profile');
-    const [showSuccess, setShowSuccess] = useState(false);
 
     // State for category management
     const [incomeCategoryInput, setIncomeCategoryInput] = useState('');
@@ -278,14 +301,6 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile, transactions, 
     const [editingEventType, setEditingEventType] = useState<string | null>(null);
     const [sopCategoryInput, setSopCategoryInput] = useState('');
     const [editingSopCategory, setEditingSopCategory] = useState<string | null>(null);
-    
-    // State for user management
-    const [isUserModalOpen, setIsUserModalOpen] = useState(false);
-    const [userModalMode, setUserModalMode] = useState<'add' | 'edit'>('add');
-    const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [userForm, setUserForm] = useState(emptyUserForm);
-    const [userFormError, setUserFormError] = useState('');
-
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -304,6 +319,8 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile, transactions, 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        // Here you would typically save the profile to the database
+        // e.g., supabase.from('profiles').update(profile).eq('id', profile.id)
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 2000);
     }
@@ -314,7 +331,7 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile, transactions, 
         setSelectedUser(user);
         if (mode === 'edit' && user) {
             setUserForm({
-                fullName: user.fullName,
+                full_name: user.full_name,
                 email: user.email,
                 role: user.role,
                 password: '',
@@ -352,7 +369,7 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile, transactions, 
         });
     };
     
-    const handleUserFormSubmit = (e: React.FormEvent) => {
+    const handleUserFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setUserFormError('');
 
@@ -362,55 +379,94 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile, transactions, 
         }
 
         if (userModalMode === 'add') {
-            if (!userForm.email || !userForm.password || !userForm.fullName) {
+            if (!userForm.email || !userForm.password || !userForm.full_name) {
                 setUserFormError('Nama, email, dan kata sandi wajib diisi.');
                 return;
             }
-            if (users.some(u => u.email === userForm.email)) {
-                setUserFormError('Email sudah digunakan.');
-                return;
-            }
-            const newUser: User = {
-                id: `USR${Date.now()}`,
-                fullName: userForm.fullName,
+            // 1. Create the user in Supabase Auth
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email: userForm.email,
                 password: userForm.password,
-                role: userForm.role,
-                permissions: userForm.role === 'Member' ? userForm.permissions : undefined,
-            };
-            setUsers(prev => [...prev, newUser]);
-        } else if (userModalMode === 'edit' && selectedUser) {
-            if (users.some(u => u.email === userForm.email && u.id !== selectedUser.id)) {
-                setUserFormError('Email sudah digunakan oleh pengguna lain.');
+                options: {
+                    data: {
+                        full_name: userForm.full_name,
+                    }
+                }
+            });
+
+            if (authError) {
+                setUserFormError(authError.message);
                 return;
             }
-            setUsers(prev => prev.map(u => {
-                if (u.id === selectedUser.id) {
-                    const updatedUser: User = {
-                        ...u,
-                        fullName: userForm.fullName,
-                        email: userForm.email,
+
+            if (authData.user) {
+                // 2. The trigger will create the user in public.users, now update role and permissions
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update({
                         role: userForm.role,
-                        permissions: userForm.role === 'Member' ? userForm.permissions : undefined,
-                    };
-                    if (userForm.password) {
-                        updatedUser.password = userForm.password;
-                    }
-                    return updatedUser;
+                        permissions: userForm.role === 'Member' ? userForm.permissions : [],
+                        full_name: userForm.full_name, // Ensure full_name is set
+                    })
+                    .eq('id', authData.user.id);
+
+                if (updateError) {
+                    setUserFormError(`User created, but failed to set role/permissions: ${updateError.message}`);
+                } else {
+                    setUsers(prev => [...prev, { id: authData.user.id, ...authData.user.user_metadata, ...userForm } as User]);
+                    handleCloseUserModal();
                 }
-                return u;
-            }));
+            }
+        } else if (userModalMode === 'edit' && selectedUser) {
+            // Update user in public.users table
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({
+                    full_name: userForm.full_name,
+                    role: userForm.role,
+                    permissions: userForm.role === 'Member' ? userForm.permissions : [],
+                })
+                .eq('id', selectedUser.id);
+
+            if (updateError) {
+                setUserFormError(updateError.message);
+                return;
+            }
+
+            // Update user in Supabase Auth if email or password changes
+            if (userForm.email !== selectedUser.email || userForm.password) {
+                const { error: authError } = await supabase.auth.admin.updateUserById(
+                    selectedUser.id,
+                    {
+                        email: userForm.email,
+                        password: userForm.password ? userForm.password : undefined
+                    }
+                );
+                if (authError) {
+                    setUserFormError(`Profile updated, but failed to update auth details: ${authError.message}`);
+                    return;
+                }
+            }
+
+            setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, full_name: userForm.full_name, email: userForm.email, role: userForm.role, permissions: userForm.permissions } : u));
+            handleCloseUserModal();
         }
-        handleCloseUserModal();
     };
 
-    const handleDeleteUser = (userId: string) => {
+    const handleDeleteUser = async (userId: string) => {
         if (userId === currentUser?.id) {
             alert("Anda tidak dapat menghapus akun Anda sendiri.");
             return;
         }
-        if (window.confirm("Apakah Anda yakin ingin menghapus pengguna ini?")) {
-            setUsers(prev => prev.filter(u => u.id !== userId));
+        if (window.confirm("Apakah Anda yakin ingin menghapus pengguna ini? Ini tidak dapat diurungkan.")) {
+            // This requires admin privileges and should ideally be done in a serverless function.
+            const { error } = await supabase.auth.admin.deleteUser(userId);
+            if (error) {
+                alert(`Gagal menghapus pengguna: ${error.message}`);
+            } else {
+                // The trigger on auth.users should handle deletion from public.users via CASCADE
+                setUsers(prev => prev.filter(u => u.id !== userId));
+            }
         }
     };
     
@@ -620,7 +676,7 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile, transactions, 
                             {users.map(user => (
                                 <div key={user.id} className="p-3 bg-brand-bg rounded-lg flex justify-between items-center">
                                     <div>
-                                        <p className="font-semibold text-brand-text-light">{user.fullName}</p>
+                                        <p className="font-semibold text-brand-text-light">{user.full_name}</p>
                                         <p className="text-sm text-brand-text-secondary">{user.email} - <span className="font-medium">{user.role}</span></p>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -746,7 +802,7 @@ const Settings: React.FC<SettingsProps> = ({ profile, setProfile, transactions, 
                 <form onSubmit={handleUserFormSubmit} className="space-y-4">
                     {userFormError && <p className="text-sm text-brand-danger bg-brand-danger/10 p-2 rounded-md">{userFormError}</p>}
                     <div className="input-group">
-                        <input type="text" id="userFullName" name="fullName" value={userForm.fullName} onChange={handleUserFormChange} className="input-field" placeholder=" " required />
+                        <input type="text" id="userFullName" name="full_name" value={userForm.full_name} onChange={handleUserFormChange} className="input-field" placeholder=" " required />
                         <label htmlFor="userFullName" className="input-label">Nama Lengkap</label>
                     </div>
                     <div className="input-group">
