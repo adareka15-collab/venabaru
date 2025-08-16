@@ -184,8 +184,7 @@ export interface Asset {
 export interface User {
     id: string;
     email: string;
-    password: string;
-    fullName: string;
+    full_name: string;
     role: 'Admin' | 'Member';
     permissions?: ViewType[];
 }
