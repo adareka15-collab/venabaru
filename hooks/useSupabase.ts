@@ -272,10 +272,6 @@ export const useSupabaseData = () => {
     }
   };
 
-  useEffect(() => {
-    fetchAllData();
-  }, []);
-
   return {
     loading,
     error,
