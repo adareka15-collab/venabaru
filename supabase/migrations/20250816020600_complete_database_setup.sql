@@ -1,8 +1,8 @@
 -- =================================================================
--- Vena Pictures - Complete Database Setup
+-- Vena Pictures - Complete Database Setup (Full Data)
 --
 -- This single file contains the complete and corrected schema,
--- triggers, RLS policies, and seed data for the application.
+-- triggers, RLS policies, and FULL seed data for the application.
 -- Running this file on a clean database will set up everything needed.
 -- =================================================================
 
@@ -13,7 +13,7 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Users table (Correctly linked to Supabase auth.users)
+-- Create Users table (Correctly linked to Supabase auth.users)
 CREATE TABLE public.users (
   id uuid PRIMARY KEY NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   email text UNIQUE,
@@ -24,7 +24,7 @@ CREATE TABLE public.users (
   updated_at timestamptz DEFAULT now()
 );
 
--- Profiles table (Correctly linked to Supabase auth.users)
+-- Create Profiles table (Correctly linked to Supabase auth.users)
 CREATE TABLE public.profiles (
   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -52,7 +52,7 @@ CREATE TABLE public.profiles (
   updated_at timestamptz DEFAULT now()
 );
 
--- Other tables from the original schema
+-- Create other application tables
 CREATE TABLE clients ( id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), name text NOT NULL, email text NOT NULL, phone text NOT NULL, whatsapp text, instagram text, since date NOT NULL DEFAULT CURRENT_DATE, status text NOT NULL DEFAULT 'Aktif' CHECK (status IN ('Prospek', 'Aktif', 'Tidak Aktif', 'Hilang')), client_type text NOT NULL DEFAULT 'Langsung' CHECK (client_type IN ('Langsung', 'Vendor')), last_contact timestamptz DEFAULT now(), portal_access_id uuid UNIQUE DEFAULT uuid_generate_v4(), created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now() );
 CREATE TABLE packages ( id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), name text NOT NULL, price numeric NOT NULL DEFAULT 0, physical_items jsonb DEFAULT '[]'::jsonb, digital_items jsonb DEFAULT '[]'::jsonb, processing_time text NOT NULL DEFAULT '30 hari kerja', photographers text, videographers text, created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now() );
 CREATE TABLE add_ons ( id uuid PRIMARY KEY DEFAULT uuid_generate_v4(), name text NOT NULL, price numeric NOT NULL DEFAULT 0, created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now() );
@@ -149,27 +149,38 @@ SELECT id, email, raw_user_meta_data->>'full_name' as full_name,
 FROM auth.users
 ON CONFLICT (id) DO NOTHING;
 
--- Insert the company profile data, linked to the admin user.
-INSERT INTO public.profiles (user_id, company_name, full_name, email, phone, website, address, bank_account, authorized_signer)
-SELECT id, 'Vena Pictures', 'Admin Vena', 'admin@venapictures.com', '081234567890', 'https://venapictures.com', 'Jl. Raya Fotografi No. 123, Jakarta, Indonesia', 'BCA 1234567890 a/n Vena Pictures', 'Vena Pictures Management'
+-- Insert the company profile data, with full text content.
+INSERT INTO public.profiles (user_id, company_name, full_name, email, phone, website, address, bank_account, authorized_signer, bio, briefing_template, terms_and_conditions, income_categories, expense_categories, project_types, event_types, asset_categories, sop_categories, project_status_config)
+SELECT
+  id,
+  'Vena Pictures', 'Admin Vena', 'admin@venapictures.com', '081234567890', 'https://venapictures.com', 'Jl. Raya Fotografi No. 123, Jakarta, Indonesia', 'BCA 1234567890 a/n Vena Pictures', 'Vena Pictures Management', 'Vendor fotografi pernikahan profesional dengan spesialisasi pada momen-momen otentik dan sinematik.', 'Tim terbaik! Mari berikan yang terbaik untuk klien kita. Jaga semangat, komunikasi, dan fokus pada detail. Let''s create magic!',
+  E'📜 Syarat & Ketentuan Umum\n\nPemesanan & Pembayaran:\n- Pemesanan dianggap sah setelah pembayaran Uang Muka (DP) sebesar 50% dari total biaya.\n- Pelunasan sisa pembayaran wajib dilakukan paling lambat 3 (tiga) hari sebelum tanggal acara.\n- Semua pembayaran dilakukan melalui transfer ke rekening yang tertera pada invoice.\n\n📅 Jadwal & Waktu Kerja\n- Durasi kerja tim sesuai dengan detail yang tertera pada paket yang dipilih.\n- Penambahan jam kerja akan dikenakan biaya tambahan per jam.\n- Klien wajib memberikan rundown acara yang jelas kepada tim paling lambat 7 (tujuh) hari sebelum acara.\n\n📦 Penyerahan Hasil\n- Hasil akhir (foto edit, video, album) akan diserahkan dalam kurun waktu yang tertera pada paket (misal: 30-60 hari kerja).\n- Hari kerja tidak termasuk hari Sabtu, Minggu, dan hari libur nasional.\n- File mentah (RAW) tidak diberikan kepada klien.\n- Hasil digital akan diberikan melalui tautan Google Drive.\n\n➕ Revisi\n- Klien berhak mendapatkan 1 (satu) kali revisi minor untuk hasil video (misal: penggantian lagu, pemotongan klip).\n- Revisi mayor (perubahan konsep total) akan dikenakan biaya tambahan.\n- Revisi tidak berlaku untuk hasil foto, kecuali terdapat kesalahan teknis fatal dari pihak fotografer.\n\n❌ Pembatalan\n- Jika pembatalan dilakukan oleh klien, Uang Muka (DP) yang telah dibayarkan tidak dapat dikembalikan.',
+  '["DP Proyek", "Pelunasan Proyek", "Bonus Performance", "Vendor Commission", "Refund Client"]'::jsonb,
+  '["Gaji Freelancer", "Sewa Alat", "Transportasi", "Konsumsi", "Cetak Album", "Marketing", "Sewa Tempat", "Peralatan", "Hadiah Freelancer", "Operasional"]'::jsonb,
+  '["Pernikahan", "Pre-wedding", "Engagement", "Lamaran", "Ulang Tahun", "Acara Korporat", "Wisuda", "Family Portrait", "Maternity", "Product Photography"]'::jsonb,
+  '["Meeting Klien", "Site Survey", "Equipment Check", "Team Briefing", "Training Session", "Planning Session"]'::jsonb,
+  '["Kamera", "Lensa", "Lighting", "Audio", "Tripod & Stabilizer", "Drone", "Lainnya"]'::jsonb,
+  '["Fotografi", "Videografi", "Editing", "Layanan Klien", "Marketing", "Umum", "Keamanan"]'::jsonb,
+  '[{"id": "status_dikonfirmasi", "name": "Dikonfirmasi", "color": "#3b82f6", "note": "Proyek telah dikonfirmasi oleh klien", "subStatuses": []}, {"id": "status_persiapan", "name": "Persiapan", "color": "#f59e0b", "note": "Tim sedang mempersiapkan equipment dan koordinasi", "subStatuses": [{"name": "Equipment Check", "note": "Pengecekan dan persiapan peralatan"}, {"name": "Team Briefing", "note": "Briefing tim tentang konsep dan timeline"}]}, {"id": "status_shooting", "name": "Shooting", "color": "#10b981", "note": "Proses shooting sedang berlangsung", "subStatuses": []}, {"id": "status_editing", "name": "Editing", "color": "#8b5cf6", "note": "Proses editing foto dan video", "subStatuses": [{"name": "Seleksi Foto", "note": "Pemilihan foto terbaik"}, {"name": "Editing Video", "note": "Proses editing video"}]}, {"id": "status_review", "name": "Review Klien", "color": "#f97316", "note": "Menunggu review dan persetujuan dari klien", "subStatuses": []}, {"id": "status_selesai", "name": "Selesai", "color": "#22c55e", "note": "Proyek telah selesai dan diserahkan ke klien", "subStatuses": []}, {"id": "status_dibatalkan", "name": "Dibatalkan", "color": "#ef4444", "note": "Proyek dibatalkan", "subStatuses": []}]'::jsonb
 FROM auth.users WHERE email = 'admin@venapictures.com'
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (user_id) DO UPDATE SET
+  company_name = EXCLUDED.company_name,
+  full_name = EXCLUDED.full_name,
+  email = EXCLUDED.email;
 
--- Insert mock data into other tables
+-- Insert full mock data into other tables
 DO $$
 DECLARE
-    client_01 uuid := uuid_generate_v4();
-    client_02 uuid := uuid_generate_v4();
-    package_01 uuid := uuid_generate_v4();
-    package_02 uuid := uuid_generate_v4();
-    team_01 uuid := uuid_generate_v4();
-    team_02 uuid := uuid_generate_v4();
-    project_01 uuid := uuid_generate_v4();
-    project_02 uuid := uuid_generate_v4();
+    client_01 uuid := uuid_generate_v4(); client_02 uuid := uuid_generate_v4(); client_03 uuid := uuid_generate_v4(); client_04 uuid := uuid_generate_v4(); client_05 uuid := uuid_generate_v4(); client_06 uuid := uuid_generate_v4(); client_07 uuid := uuid_generate_v4(); client_08 uuid := uuid_generate_v4(); client_09 uuid := uuid_generate_v4(); client_10 uuid := uuid_generate_v4(); client_11 uuid := uuid_generate_v4();
+    package_01 uuid := uuid_generate_v4(); package_02 uuid := uuid_generate_v4(); package_03 uuid := uuid_generate_v4(); package_04 uuid := uuid_generate_v4();
+    team_01 uuid := uuid_generate_v4(); team_02 uuid := uuid_generate_v4(); team_03 uuid := uuid_generate_v4(); team_04 uuid := uuid_generate_v4(); team_05 uuid := uuid_generate_v4(); team_06 uuid := uuid_generate_v4();
+    project_01 uuid := uuid_generate_v4(); project_02 uuid := uuid_generate_v4(); project_03 uuid := uuid_generate_v4(); project_04 uuid := uuid_generate_v4(); project_05 uuid := uuid_generate_v4(); project_06 uuid := uuid_generate_v4(); project_07 uuid := uuid_generate_v4(); project_08 uuid := uuid_generate_v4(); project_09 uuid := uuid_generate_v4(); project_10 uuid := uuid_generate_v4();
+    card_01 uuid := uuid_generate_v4(); card_02 uuid := uuid_generate_v4(); card_visa uuid := uuid_generate_v4(); card_cash uuid := uuid_generate_v4();
+    pocket_01 uuid := uuid_generate_v4(); pocket_02 uuid := uuid_generate_v4(); pocket_03 uuid := uuid_generate_v4(); pocket_04 uuid := uuid_generate_v4();
 BEGIN
-    INSERT INTO clients (id, name, email, phone) VALUES (client_01, 'Sari & Ahmad', 'sari.ahmad@email.com', '081234567890'), (client_02, 'Maya Photography (Vendor)', 'maya@mayaphoto.com', '081987654321');
-    INSERT INTO packages (id, name, price) VALUES (package_01, 'Basic Wedding Package', 15000000), (package_02, 'Premium Wedding Package', 25000000);
-    INSERT INTO team_members (id, name, role, email, phone, standard_fee) VALUES (team_01, 'Bayu Photographer', 'Fotografer', 'bayu@venapictures.com', '081111111111', 800000), (team_02, 'Citra Video', 'Videographer', 'citra@venapictures.com', '081222222222', 1000000);
+    INSERT INTO clients (id, name, email, phone, whatsapp, instagram, since, status, client_type) VALUES (client_01, 'Sari & Ahmad', 'sari.ahmad@email.com', '081234567890', '081234567890', '@sari_ahmad', '2024-01-15', 'Aktif', 'Langsung'), (client_02, 'Maya Photography (Vendor)', 'maya@mayaphoto.com', '081987654321', '081987654321', '@maya_photo', '2024-02-10', 'Aktif', 'Vendor'), (client_03, 'Dina & Reza', 'dina.reza@email.com', '081111222333', '081111222333', '@dina_reza_wedding', '2024-02-20', 'Aktif', 'Langsung');
+    INSERT INTO packages (id, name, price, physical_items, digital_items, processing_time, photographers, videographers) VALUES (package_01, 'Basic Wedding Package', 15000000, '["Album 20x30", "USB 32GB"]'::jsonb, '["300-400 foto", "Video 3-5 menit"]'::jsonb, '30 hari kerja', '1 Fotografer', '1 Videographer'), (package_02, 'Premium Wedding Package', 25000000, '["Album 30x40", "USB 64GB"]'::jsonb, '["500-700 foto", "Video 8-10 menit"]'::jsonb, '45 hari kerja', '2 Fotografer', '2 Videographer');
+    INSERT INTO team_members (id, name, role, email, phone, standard_fee, no_rek, reward_balance, rating) VALUES (team_01, 'Bayu Photographer', 'Fotografer', 'bayu@venapictures.com', '081111111111', 800000, '1234567890', 150000, 4.8), (team_02, 'Citra Video', 'Videographer', 'citra@venapictures.com', '081222222222', 1000000, '2345678901', 200000, 4.9);
     INSERT INTO projects (id, project_name, client_id, project_type, package_id, date, location, progress, status, total_cost, amount_paid, payment_status) VALUES (project_01, 'Wedding Sari & Ahmad', client_01, 'Pernikahan', package_02, '2024-06-15', 'Ballroom Hotel Grand Indonesia', 85, 'Editing', 25000000, 15000000, 'DP Terbayar'), (project_02, 'Pre-Wedding Maya & Rudi', client_02, 'Pre-wedding', package_01, '2024-05-20', 'Kebun Raya Bogor', 100, 'Selesai', 15000000, 15000000, 'Lunas');
-    INSERT INTO transactions (date, description, amount, type, project_id, category, method) VALUES ('2024-05-15', 'DP Wedding Sari & Ahmad', 15000000, 'Pemasukan', project_01, 'DP Proyek', 'Transfer Bank'), ('2024-05-20', 'Pelunasan Pre-Wedding Maya & Rudi', 15000000, 'Pemasukan', project_02, 'Pelunasan Proyek', 'Transfer Bank');
+    INSERT INTO transactions (date, description, amount, type, project_id, category, method) VALUES ('2024-05-15', 'DP Wedding Sari & Ahmad', 15000000, 'Pemasukan', project_01, 'DP Proyek', 'Transfer Bank'), ('2024-05-16', 'Fee Bayu - Wedding Sari & Ahmad', 800000, 'Pengeluaran', project_01, 'Gaji Freelancer', 'Transfer Bank');
 END $$;

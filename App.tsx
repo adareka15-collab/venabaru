@@ -184,6 +184,12 @@ const App: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      refetchData();
+    }
+  }, [isAuthenticated]);
+
 
   useEffect(() => {
     const handleHashChange = () => {
