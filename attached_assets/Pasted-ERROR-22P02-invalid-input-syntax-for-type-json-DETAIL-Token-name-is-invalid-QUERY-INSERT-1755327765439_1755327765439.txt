@@ -1,0 +1,35 @@
+ERROR:  22P02: invalid input syntax for type json
+DETAIL:  Token "name" is invalid.
+QUERY:  INSERT INTO projects (id, project_name, client_id, project_type, package_id, date, deadline_date, location, progress, status, total_cost, amount_paid, payment_status, team, notes) VALUES
+    (project_01, 'Wedding Sari & Ahmad', client_01, 'Pernikahan', package_02, '2024-06-15', '2024-07-30', 'Ballroom Hotel Grand Indonesia', 85, 'Editing', 25000000, 15000000, 'DP Terbayar',
+     '[{"id": "' || team_01::text || '", "name": "Bayu Photographer", "role": "Fotografer", "fee": 800000}, {"id": "' || team_02::text || '", "name": "Citra Video", "role": "Videographer", "fee": 1000000}]'::jsonb,
+     'Tema dekorasi gold & cream. Client request extra coverage untuk akad nikah.'),
+    (project_02, 'Pre-Wedding Maya & Rudi', client_02, 'Pre-wedding', package_04, '2024-05-20', '2024-06-03', 'Kebun Raya Bogor', 100, 'Selesai', 8000000, 8000000, 'Lunas',
+     '[{"id": "' || team_01::text || '", "name": "Bayu Photographer", "role": "Fotografer", "fee": 800000}, {"id": "' || team_02::text || '", "name": "Citra Video", "role": "Videographer", "fee": 1000000}]'::jsonb,
+     'Outdoor session, cuaca sempurna. Client sangat puas dengan hasil.'),
+    (project_03, 'Wedding Dina & Reza', client_03, 'Pernikahan', package_01, '2024-07-10', '2024-08-09', 'Gedung Serbaguna Kemayoran', 40, 'Persiapan', 15000000, 7500000, 'DP Terbayar',
+     '[{"id": "' || team_01::text || '", "name": "Bayu Photographer", "role": "Fotografer", "fee": 800000}, {"id": "' || team_03::text || '", "name": "Denny Editor", "role": "Video Editor", "fee": 600000}]'::jsonb,
+     'Pernikahan adat Jawa. Perlu koordinasi dengan pihak keluarga untuk prosesi adat.'),
+    (project_04, 'Wedding Lina & Budi', client_04, 'Pernikahan', package_03, '2024-08-05', '2024-10-04', 'The Mulia Bali', 20, 'Persiapan', 40000000, 20000000, 'DP Terbayar',
+     '[{"id": "' || team_01::text || '", "name": "Bayu Photographer", "role": "Fotografer", "fee": 800000}, {"id": "' || team_02::text || '", "name": "Citra Video", "role": "Videographer", "fee": 1000000}, {"id": "' || team_05::text || '", "name": "Fandi Drone", "role": "Drone Operator", "fee": 750000}]'::jsonb,
+     'Destination wedding di Bali. Perlu arrange transportasi dan akomodasi tim.'),
+    (project_05, 'Lamaran Ani & Joko', client_05, 'Lamaran', package_04, '2024-06-01', '2024-06-15', 'Rumah Orang Tua Ani', 90, 'Editing', 8000000, 8000000, 'Lunas',
+     '[{"id": "' || team_01::text || '", "name": "Bayu Photographer", "role": "Fotografer", "fee": 800000}]'::jsonb,
+     'Acara intimate dengan keluarga. Dokumentasi prosesi lamaran tradisional.'),
+    (project_06, 'Corporate Event Rita Corp', client_06, 'Acara Korporat', package_01, '2024-06-25', '2024-07-10', 'JCC Senayan', 60, 'Editing', 15000000, 10000000, 'DP Terbayar',
+     '[{"id": "' || team_01::text || '", "name": "Bayu Photographer", "role": "Fotografer", "fee": 800000}, {"id": "' || team_02::text || '", "name": "Citra Video", "role": "Videographer", "fee": 1000000}]'::jsonb,
+     'Annual gathering perusahaan. Butuh dokumentasi lengkap untuk report internal.'),
+    (project_07, 'Pre-Wedding Dewi & Andi', client_07, 'Pre-wedding', package_04, '2024-07-15', '2024-07-29', 'Pantai Anyer', 10, 'Persiapan', 8000000, 4000000, 'DP Terbayar',
+     '[{"id": "' || team_01::text || '", "name": "Bayu Photographer", "role": "Fotografer", "fee": 800000}, {"id": "' || team_02::text || '", "name": "Citra Video", "role": "Videographer", "fee": 1000000}]'::jsonb,
+     'Beach session dengan tema sunset. Backup plan indoor jika cuaca buruk.'),
+    (project_08, 'Wedding Sinta & Yoga', client_08, 'Pernikahan', package_02, '2024-08-20', '2024-10-04', 'Balai Kartini Jakarta', 5, 'Dikonfirmasi', 25000000, 0, 'Belum Bayar',
+     '[{"id": "' || team_01::text || '", "name": "Bayu Photographer", "role": "Fotografer", "fee": 800000}, {"id": "' || team_02::text || '", "name": "Citra Video", "role": "Videographer", "fee": 1000000}]'::jsonb,
+     'Traditional Javanese wedding. Koordinasi dengan wedding organizer untuk timeline.'),
+    (project_09, 'Birthday Party Eka Jr.', client_09, 'Ulang Tahun', package_04, '2024-07-05', '2024-07-12', 'McDonald Kelapa Gading', 100, 'Selesai', 5000000, 5000000, 'Lunas',
+     '[{"id": "' || team_04::text || '", "name": "Eka Assistant", "role": "Asisten", "fee": 300000}]'::jsonb,
+     'Ulang tahun anak ke-5. Tema superhero, banyak candid shots dengan anak-anak.'),
+    (project_10, 'Wedding Tuti & Agus', client_10, 'Pernikahan', package_01, '2024-09-10', '2024-10-10', 'Gedung PBSI Jakarta', 0, 'Dikonfirmasi', 15000000, 0, 'Belum Bayar',
+     '[{"id": "' || team_01::text || '", "name": "Bayu Photographer", "role": "Fotografer", "fee": 800000}]'::jsonb,
+     'Simple wedding reception. Client budget terbatas tapi ingin hasil maksimal.')
+CONTEXT:  JSON data, line 1: ", "name...
+PL/pgSQL function inline_code_block line 116 at SQL statement

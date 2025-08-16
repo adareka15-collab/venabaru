@@ -1,0 +1,72 @@
+Pengaturan
+Kelola profil, pengguna, dan kustomisasi aplikasi Anda.
+
+Profil Saya
+Pengguna
+Kustomisasi Kategori
+Status Proyek
+Informasi Publik
+Admin Vena
+Nama Lengkap
+Vena Pictures
+Nama Perusahaan
+admin@venapictures.com
+Email
+081234567890
+Telepon
+https://venapictures.com
+Website
+Jl. Raya Fotografi No. 123, Jakarta, Indonesia
+Alamat
+BCA 1234567890 a/n Vena Pictures
+Rekening Bank
+Vena Pictures Management
+Nama Penanggung Jawab Tanda Tangan (u/ QR Code)
+Vendor fotografi pernikahan profesional dengan spesialisasi pada momen-momen otentik dan sinematik.
+Bio Perusahaan
+Tim terbaik! Mari berikan yang terbaik untuk klien kita. Jaga semangat, komunikasi, dan fokus pada detail. Let's create magic!
+Template Pesan Briefing Tim
+📜 Syarat & Ketentuan Umum
+
+Pemesanan & Pembayaran:
+- Pemesanan dianggap sah setelah pembayaran Uang Muka (DP) sebesar 50% dari total biaya.
+- Pelunasan sisa pembayaran wajib dilakukan paling lambat 3 (tiga) hari sebelum tanggal acara.
+- Semua pembayaran dilakukan melalui transfer ke rekening yang tertera pada invoice.
+
+📅 Jadwal & Waktu Kerja
+- Durasi kerja tim sesuai dengan detail yang tertera pada paket yang dipilih.
+- Penambahan jam kerja akan dikenakan biaya tambahan per jam.
+- Klien wajib memberikan rundown acara yang jelas kepada tim paling lambat 7 (tujuh) hari sebelum acara.
+
+📦 Penyerahan Hasil
+- Hasil akhir (foto edit, video, album) akan diserahkan dalam kurun waktu yang tertera pada paket (misal: 30-60 hari kerja).
+- Hari kerja tidak termasuk hari Sabtu, Minggu, dan hari libur nasional.
+- File mentah (RAW) tidak diberikan kepada klien.
+- Hasil digital akan diberikan melalui tautan Google Drive.
+
+➕ Revisi
+- Klien berhak mendapatkan 1 (satu) kali revisi minor untuk hasil video (misal: penggantian lagu, pemotongan klip).
+- Revisi mayor (perubahan konsep total) akan dikenakan biaya tambahan.
+- Revisi tidak berlaku untuk hasil foto, kecuali terdapat kesalahan teknis fatal dari pihak fotografer.
+
+❌ Pembatalan
+- Jika pembatalan dilakukan oleh klien, Uang Muka (DP) yang telah dibayarkan tidak dapat dikembalikan.
+- Jika pembatalan dilakukan oleh pihak Vena Pictures, seluruh pembayaran yang telah diterima akan dikembalikan 100%.
+
+Lain-lain:
+- Vena Pictures tidak bertanggung jawab atas kegagalan pelaksanaan acara yang disebabkan oleh kejadian di luar kendali (bencana alam, kerusuhan, dll.).
+- Jika terjadi kerusakan alat yang tidak disengaja, Vena Pictures akan memberikan kompensasi sesuai dengan kesepakatan bersama.
+- Hak cipta hasil foto dan video tetap menjadi milik Vena Pictures.
+- Vena Pictures berhak menggunakan hasil karya untuk kepentingan portofolio dan promosi di media sosial atau website, kecuali jika ada perjanjian tertulis sebelumnya dengan klien.
+Syarat & Ketentuan
+Notifikasi
+Proyek Baru Dibuat
+
+Konfirmasi Pembayaran Diterima
+
+Pengingat Deadline Proyek
+
+Keamanan
+Autentikasi Dua Faktor (2FA)
+
+Simpan Perubahan
