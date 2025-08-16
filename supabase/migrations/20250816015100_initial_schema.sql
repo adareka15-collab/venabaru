@@ -1,50 +1,53 @@
-/*
-  # Initial Database Schema for Vena Pictures
-
-  1. New Tables
-    - `users` - User accounts and authentication
-    - `clients` - Client information and portal access
-    - `projects` - Project details and status tracking
-    - `team_members` - Freelancer information
-    - `packages` - Service packages
-    - `add_ons` - Additional services
-    - `transactions` - Financial transactions
-    - `leads` - Prospect management
-    - `client_feedback` - Customer satisfaction data
-    - `contracts` - Legal contracts
-    - `social_media_posts` - Social media planning
-    - `promo_codes` - Discount codes
-    - `assets` - Equipment and asset tracking
-    - `sops` - Standard Operating Procedures
-    - `revisions` - Project revision tracking
-    - `team_project_payments` - Freelancer payment tracking
-    - `team_payment_records` - Payment slip records
-    - `reward_ledger_entries` - Freelancer reward tracking
-    - `financial_pockets` - Budget allocation
-    - `cards` - Payment cards/accounts
-
-  2. Security
-    - Enable RLS on all tables
-    - Add policies for authenticated users
-    - Separate policies for public forms
-
-  3. Features
-    - UUID primary keys
-    - Timestamps for audit trail
-    - JSON fields for complex data
-    - Foreign key relationships
-*/
+-- =================================================================
+-- Vena Pictures - Initial Database Schema
+--
+-- This single file contains the complete and corrected schema for the application.
+-- It sets up all tables, links `users` and `profiles` to `auth.users`,
+-- and creates the necessary triggers and RLS policies.
+-- =================================================================
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Users table (extends Supabase auth.users)
-CREATE TABLE IF NOT EXISTS users (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  email text UNIQUE NOT NULL,
-  full_name text NOT NULL,
+-- =================================================================
+-- Table Creation
+-- =================================================================
+
+-- Users table (Correctly linked to Supabase auth.users)
+CREATE TABLE public.users (
+  id uuid PRIMARY KEY NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  email text UNIQUE,
+  full_name text,
   role text NOT NULL DEFAULT 'Member' CHECK (role IN ('Admin', 'Member')),
   permissions jsonb DEFAULT '[]'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Profiles table (Correctly linked to Supabase auth.users)
+CREATE TABLE public.profiles (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  company_name text NOT NULL,
+  full_name text NOT NULL,
+  email text NOT NULL,
+  phone text NOT NULL,
+  website text,
+  address text,
+  bank_account text,
+  authorized_signer text,
+  bio text,
+  briefing_template text,
+  terms_and_conditions text,
+  income_categories jsonb DEFAULT '[]'::jsonb,
+  expense_categories jsonb DEFAULT '[]'::jsonb,
+  project_types jsonb DEFAULT '[]'::jsonb,
+  event_types jsonb DEFAULT '[]'::jsonb,
+  asset_categories jsonb DEFAULT '[]'::jsonb,
+  sop_categories jsonb DEFAULT '[]'::jsonb,
+  project_status_config jsonb DEFAULT '[]'::jsonb,
+  notification_settings jsonb DEFAULT '{}'::jsonb,
+  security_settings jsonb DEFAULT '{}'::jsonb,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -348,180 +351,98 @@ CREATE TABLE IF NOT EXISTS cards (
   updated_at timestamptz DEFAULT now()
 );
 
--- Enable Row Level Security
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
-ALTER TABLE packages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE add_ons ENABLE ROW LEVEL SECURITY;
-ALTER TABLE team_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
-ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
-ALTER TABLE client_feedback ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contracts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE social_media_posts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE promo_codes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE assets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sops ENABLE ROW LEVEL SECURITY;
-ALTER TABLE team_project_payments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE team_payment_records ENABLE ROW LEVEL SECURITY;
-ALTER TABLE reward_ledger_entries ENABLE ROW LEVEL SECURITY;
-ALTER TABLE financial_pockets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE cards ENABLE ROW LEVEL SECURITY;
+-- =================================================================
+-- RLS (Row Level Security) and Policies
+-- =================================================================
 
--- RLS Policies for authenticated users
-CREATE POLICY "Authenticated users can manage users"
-  ON users FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+-- Enable RLS on all tables
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.packages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.add_ons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.client_feedback ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.contracts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.social_media_posts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.promo_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.assets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sops ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.team_project_payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.team_payment_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reward_ledger_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.financial_pockets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cards ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Authenticated users can manage clients"
-  ON clients FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+-- Policies for `users` table
+CREATE POLICY "Authenticated users can see their own user data" ON public.users FOR SELECT TO authenticated USING ( auth.uid() = id );
+CREATE POLICY "Admins can manage all user data" ON public.users FOR ALL TO authenticated USING ( (SELECT role FROM public.users WHERE id = auth.uid()) = 'Admin' ) WITH CHECK ( (SELECT role FROM public.users WHERE id = auth.uid()) = 'Admin' );
 
-CREATE POLICY "Authenticated users can manage packages"
-  ON packages FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+-- Policies for `profiles` table
+CREATE POLICY "Authenticated users can manage profiles" ON public.profiles FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
-CREATE POLICY "Authenticated users can manage add_ons"
-  ON add_ons FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+-- Generic policies for other tables (for authenticated users)
+CREATE POLICY "Authenticated users can manage clients" ON clients FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage packages" ON packages FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage add_ons" ON add_ons FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage team_members" ON team_members FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage projects" ON projects FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage transactions" ON transactions FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage leads" ON leads FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage contracts" ON contracts FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage social_media_posts" ON social_media_posts FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage promo_codes" ON promo_codes FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage assets" ON assets FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage sops" ON sops FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage team_project_payments" ON team_project_payments FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage team_payment_records" ON team_payment_records FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage reward_ledger_entries" ON reward_ledger_entries FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage financial_pockets" ON financial_pockets FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can manage cards" ON cards FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
-CREATE POLICY "Authenticated users can manage team_members"
-  ON team_members FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+-- Public policies for forms and public access
+CREATE POLICY "Anyone can insert leads" ON leads FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Anyone can insert client_feedback" ON client_feedback FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "Anyone can read packages" ON packages FOR SELECT TO anon USING (true);
+CREATE POLICY "Anyone can read add_ons" ON add_ons FOR SELECT TO anon USING (true);
+CREATE POLICY "Anyone can read promo_codes" ON promo_codes FOR SELECT TO anon USING (true);
+CREATE POLICY "Clients can access their own data via portal" ON clients FOR SELECT TO anon USING (true);
+CREATE POLICY "Team members can access their own data via portal" ON team_members FOR SELECT TO anon USING (true);
+CREATE POLICY "Portal users can read related projects" ON projects FOR SELECT TO anon USING (true);
 
-CREATE POLICY "Authenticated users can manage projects"
-  ON projects FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+-- =================================================================
+-- Triggers and Functions
+-- =================================================================
 
-CREATE POLICY "Authenticated users can manage transactions"
-  ON transactions FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+-- Function to automatically create a public user profile upon sign-up.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Create a record in public.users
+  INSERT INTO public.users (id, email, full_name)
+  VALUES (new.id, new.email, COALESCE(new.raw_user_meta_data->>'full_name', new.email));
 
-CREATE POLICY "Authenticated users can manage leads"
-  ON leads FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+  -- Assign 'Admin' role to the specific admin user
+  IF new.email = 'admin@venapictures.com' THEN
+      UPDATE public.users SET role = 'Admin' WHERE id = new.id;
+  END IF;
 
-CREATE POLICY "Authenticated users can manage contracts"
-  ON contracts FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE POLICY "Authenticated users can manage social_media_posts"
-  ON social_media_posts FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+-- Trigger to call the function.
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
-CREATE POLICY "Authenticated users can manage promo_codes"
-  ON promo_codes FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
+-- =================================================================
+-- Indexes
+-- =================================================================
 
-CREATE POLICY "Authenticated users can manage assets"
-  ON assets FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
-
-CREATE POLICY "Authenticated users can manage sops"
-  ON sops FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
-
-CREATE POLICY "Authenticated users can manage team_project_payments"
-  ON team_project_payments FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
-
-CREATE POLICY "Authenticated users can manage team_payment_records"
-  ON team_payment_records FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
-
-CREATE POLICY "Authenticated users can manage reward_ledger_entries"
-  ON reward_ledger_entries FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
-
-CREATE POLICY "Authenticated users can manage financial_pockets"
-  ON financial_pockets FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
-
-CREATE POLICY "Authenticated users can manage cards"
-  ON cards FOR ALL
-  TO authenticated
-  USING (true)
-  WITH CHECK (true);
-
--- Public policies for forms
-CREATE POLICY "Anyone can insert leads"
-  ON leads FOR INSERT
-  TO anon
-  WITH CHECK (true);
-
-CREATE POLICY "Anyone can insert client_feedback"
-  ON client_feedback FOR INSERT
-  TO anon
-  WITH CHECK (true);
-
--- Public read policies for booking form
-CREATE POLICY "Anyone can read packages"
-  ON packages FOR SELECT
-  TO anon
-  USING (true);
-
-CREATE POLICY "Anyone can read add_ons"
-  ON add_ons FOR SELECT
-  TO anon
-  USING (true);
-
-CREATE POLICY "Anyone can read promo_codes"
-  ON promo_codes FOR SELECT
-  TO anon
-  USING (true);
-
--- Portal access policies
-CREATE POLICY "Clients can access their own data via portal"
-  ON clients FOR SELECT
-  TO anon
-  USING (true);
-
-CREATE POLICY "Team members can access their own data via portal"
-  ON team_members FOR SELECT
-  TO anon
-  USING (true);
-
-CREATE POLICY "Portal users can read related projects"
-  ON projects FOR SELECT
-  TO anon
-  USING (true);
-
--- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_clients_portal_access_id ON clients(portal_access_id);
 CREATE INDEX IF NOT EXISTS idx_team_members_portal_access_id ON team_members(portal_access_id);
 CREATE INDEX IF NOT EXISTS idx_projects_client_id ON projects(client_id);
@@ -530,3 +451,4 @@ CREATE INDEX IF NOT EXISTS idx_transactions_project_id ON transactions(project_i
 CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
 CREATE INDEX IF NOT EXISTS idx_leads_date ON leads(date);
 CREATE INDEX IF NOT EXISTS idx_client_feedback_date ON client_feedback(date);
+CREATE INDEX IF NOT EXISTS idx_profiles_company_name ON profiles(company_name);
